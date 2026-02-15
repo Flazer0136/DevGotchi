@@ -10,7 +10,7 @@ from rich import box
 from menu_system import MenuState
 import os
 
-console = Console()
+console = Console(force_terminal=True)
 
 THEME = {
     "bg": "#1a1b26",           

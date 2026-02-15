@@ -1,7 +1,12 @@
 from enum import Enum
 import sys
-import tty
-import termios
+import os
+
+if os.name == 'posix':
+    import tty
+    import termios
+elif os.name == 'nt':
+    import msvcrt
 
 class MenuState(Enum):
     MAIN = "main"
@@ -103,20 +108,33 @@ class Menu:
         return self.state == MenuState.ACTIONS
 
 def get_key():
-    # ... paste your existing get_key code here ...
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    try:
-        tty.setraw(sys.stdin.fileno())
-        ch = sys.stdin.read(1)
-        if ch == '\x1b':
-            ch2 = sys.stdin.read(1)
-            if ch2 == '[':
-                ch3 = sys.stdin.read(1)
-                if ch3 == 'A': return 'UP'
-                elif ch3 == 'B': return 'DOWN'
-                elif ch3 == 'C': return 'RIGHT'
-                elif ch3 == 'D': return 'LEFT'
-        return ch
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    if os.name == 'nt':
+        key = msvcrt.getch()
+        if key == b'\xe0':
+            key = msvcrt.getch()
+            if key == b'H': return 'UP'
+            elif key == b'P': return 'DOWN'
+            elif key == b'M': return 'RIGHT'
+            elif key == b'K': return 'LEFT'
+        try:
+            return key.decode('utf-8')
+        except:
+            return '?'
+        
+    else:
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+            if ch == '\x1b':
+                ch2 = sys.stdin.read(1)
+                if ch2 == '[':
+                    ch3 = sys.stdin.read(1)
+                    if ch3 == 'A': return 'UP'
+                    elif ch3 == 'B': return 'DOWN'
+                    elif ch3 == 'C': return 'RIGHT'
+                    elif ch3 == 'D': return 'LEFT'
+            return ch
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)

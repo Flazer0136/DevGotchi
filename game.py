@@ -1,8 +1,11 @@
 import sys
 import time
 import os
-import tty
-import termios
+
+if os.name == 'posix':
+    import tty
+    import termios
+
 from rich.live import Live
 from rich.console import Console
 from pynput import keyboard
@@ -23,8 +26,9 @@ class Game:
         self.pending_key = None
         
         # ✨ Save terminal settings
-        self.fd = sys.stdin.fileno()
-        self.old_settings = termios.tcgetattr(self.fd)
+        if os.name == 'posix':
+            self.fd = sys.stdin.fileno()
+            self.old_settings = termios.tcgetattr(self.fd)
 
         self.view_mode = "stats"
         
@@ -105,10 +109,14 @@ class Game:
     def cleanup(self):
         """Restore terminal to normal state"""
         self.listener.stop()
-        termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
+
+        if os.name == 'posix':
+            termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
 
     def run(self):
-        tty.setcbreak(self.fd)
+        if os.name == 'posix':
+            tty.setcbreak(self.fd)
+        
         console.clear()
         
         menu = Menu()
@@ -122,7 +130,7 @@ class Game:
                 create_game_layout(self.pet, menu, self.message, 0, None),  
                 auto_refresh=False,
                 console=console,
-                screen=False,
+                screen=True,
                 refresh_per_second=20
             ) as live:
                 while self.running:
