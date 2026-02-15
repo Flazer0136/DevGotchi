@@ -1,7 +1,8 @@
 from pet_system.pet_data import Pet
-from display import display_pet, display_message, console, COLORS
+from display import display_message, console, COLORS, create_main_layout, display_pet_live
 from git_tracker import is_git_repo, get_commit_info, hours_since_last_commit
 from save_system import save_pet, load_pet, calculate_decay_since_last_save
+from rich.live import Live
 import time
 import os
 
@@ -182,15 +183,35 @@ class Game:
         save_pet(self.pet)
     
     def run(self):
-        """Main game loop"""
+        """Main game loop with Live display"""
+        frame_index = 0
+        
         while self.running:
-            display_pet(self.pet)
+            # Create layout
+            layout = create_main_layout(self.pet, frame_index)
             
-            console.print(f"\n[bold {COLORS['primary']}]━━━ Actions ━━━[/]")
-            console.print(f"[{COLORS['secondary']}]feed[/] | [{COLORS['secondary']}]play[/] | [{COLORS['secondary']}]dance[/] | [{COLORS['secondary']}]sit[/] | [{COLORS['secondary']}]sing[/] | [{COLORS['info']}]status[/] | save | [{COLORS['danger']}]quit[/]")
+            # Show with Live (redraws in place)
+            with Live(layout, console=console, refresh_per_second=1, screen=False) as live:
+                # Show animated pet for 2 seconds
+                for i in range(8):  # 8 frames = 2 seconds at 4 FPS
+                    frame_index += 1
+                    layout = create_main_layout(self.pet, frame_index)
+                    live.update(layout)
+                    time.sleep(0.25)
+                
+                # Stop animation, get input
+                live.stop()
             
+            # Show command prompt (outside Live context)
             command = console.input(f"\n[bold {COLORS['secondary']}]>[/] ").strip().lower()
+            
+            # Handle the command
             self.handle_command(command)
+            
+            # Brief animation after action
+            if command in ['feed', 'play', 'dance', 'sit', 'sing']:
+                display_pet_live(self.pet, duration=1.5)  # 1.5 sec celebration animation
+
 
 
 if __name__ == "__main__":
