@@ -3,10 +3,14 @@
   "creation_time": 1771134440.288357,
   "pet_memory": {
     "owner_name": "Avi",
-    "name_clarity": 100,
-    "bond_level": 100,
-    "learned_tricks": [],
-    "interaction_count": 0
+    "name_clarity": 0,
+    "bond_level": 44,
+    "learned_tricks": [
+      "dance",
+      "sit",
+      "sing"
+    ],
+    "interaction_count": 7
   },
   "stats": {
     "health": 100,
@@ -15,11 +19,11 @@
     "age_hours": 0
   },
   "player_memory": {
-    "file_corruption": 0,
+    "file_corruption": 80,
     "history_intact": true,
     "art_quality": 100
   },
-  "last_interaction": 1771134440.28837,
+  "last_interaction": 1771135652.444601,
   "last_commit": 1771134440.288373,
-  "last_save_time": 1771134479.2481642
+  "last_save_time": 1771135661.076174
 }
