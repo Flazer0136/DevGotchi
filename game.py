@@ -92,17 +92,18 @@ class Game:
         termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
 
     def run(self):
-        # ✨ Put terminal in raw mode (no echo)
         tty.setcbreak(self.fd)
-        
         console.clear()
+        
         menu = Menu()
         frame_index = 0
         loop_count = 0
+        current_action = None  # ✨ Track what action is happening
+        action_timer = 0       # ✨ When action ends
         
         try:
             with Live(
-                create_game_layout(self.pet, menu, self.message, 0),
+                create_game_layout(self.pet, menu, self.message, 0, None),  
                 auto_refresh=False,
                 console=console,
                 screen=False,
@@ -111,9 +112,13 @@ class Game:
                 while self.running:
                     loop_count += 1
                     
-                    # Animate when message showing
-                    if time.time() < self.message_timer and loop_count % 3 == 0:
-                        frame_index = (frame_index + 1) % 4
+                    # Check if action animation finished
+                    if current_action and time.time() > action_timer:
+                        current_action = None  # ✨ Stop showing action, return to normal
+                    
+                    # Animate when message showing OR action playing
+                    if (time.time() < self.message_timer or current_action) and loop_count % 3 == 0:
+                        frame_index = (frame_index + 1) % 100
                     
                     # Handle key press
                     if self.pending_key:
@@ -132,21 +137,27 @@ class Game:
                             action = menu.select()
                             if action:
                                 self.handle_command(action)
+                                
+                                # ✨ Set action animation
+                                if action in ['dance', 'sit', 'sing']:
+                                    current_action = action
+                                    action_timer = time.time() + 2.0  # 2 seconds
+                                    frame_index = 0  # Reset to start of animation
                         elif key == 'q':
                             self.handle_command('quit')
                     
                     # Update display
                     msg = self.message if time.time() < self.message_timer else ""
                     live.update(
-                        create_game_layout(self.pet, menu, msg, frame_index),
+                        create_game_layout(self.pet, menu, msg, frame_index, current_action),  # ✨ Pass action
                         refresh=True
                     )
                     
                     time.sleep(0.05)
         
         finally:
-            # ✨ Always restore terminal on exit
             self.cleanup()
+
 
 
 if __name__ == "__main__":

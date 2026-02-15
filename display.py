@@ -8,10 +8,10 @@ from rich.table import Table
 from rich.align import Align
 from rich import box
 from menu_system import MenuState
+import os
 
 console = Console()
 
-# --- THEME: "LIP GLOSS" (Deep Purple/Pink) ---
 THEME = {
     "bg": "#1a1b26",           
     "border": "#7aa2f7",       
@@ -25,51 +25,38 @@ THEME = {
     "danger": "#f7768e"
 }
 
-# --- YOUR ORIGINAL ART ---
-PET_ART = {
-    "happy": [
-        """
-   /\\_/\\  
-  ( ^.^ ) 
-   > ^ <
-        """,
-        """
-   /\\_/\\  
-  ( ^ω^ ) 
-   > ^ <
-        """
-    ],
-    "neutral": [
-        """
-   /\\_/\\  
-  ( -.- ) 
-   > ~ <
-        """,
-        """
-   /\\_/\\  
-  ( o.o ) 
-   > ~ <
-        """
-    ],
-    "sad": [
-        """
-   /\\_/\\  
-  ( ;_; ) 
-   > . <
-        """,
-        """
-   /\\_/\\  
-  ( T_T ) 
-   > . <
-        """
-    ],
-    "forgotten": [
-        """
-   / _ \\  
-  (  ?  ) 
-   >   <
-        """
-    ]
+def load_sprite_frames(filename):
+    """
+    Load sprite frames from a text file.
+    If file has multiple frames, they're separated by blank lines.
+    Returns list of frames.
+    """
+    try:
+        with open(f"pet_sprites/{filename}", 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Split by double newlines (frame separator)
+        frames = content.split('\n\n\n\n\n\n')  # Your files use 6 newlines
+        
+        # Clean up frames (remove extra whitespace)
+        frames = [frame.strip() for frame in frames if frame.strip()]
+        
+        # If only one frame, return it as single-item list
+        return frames if frames else [content]
+    except:
+        # Fallback if file doesn't exist
+        return ["???"]
+
+
+PET_SPRITES = {
+    "happy": load_sprite_frames("happy.txt"),
+    "normal": load_sprite_frames("normal.txt"),
+    "sadness": load_sprite_frames("sadness.txt"),
+    "fear": load_sprite_frames("fear.txt"),
+    "anger": load_sprite_frames("anger.txt"),
+    "regular": load_sprite_frames("regular.txt"),
+    "dance": load_sprite_frames("Dance.txt"),
+    "sit": load_sprite_frames("sit.txt"),
 }
 
 def corrupt_text(text, corruption_level):
@@ -87,31 +74,42 @@ def corrupt_text(text, corruption_level):
             corrupted += char
     return corrupted
 
-def get_pet_art(pet, frame_index=0):
-    """Get ASCII art based on pet's bond level + Animation Frame"""
-    bond = pet.pet_memory["bond_level"]
-    corruption = pet.player_memory["file_corruption"]
-
-    # Choose state
-    if corruption > 80:
-        frames = PET_ART["forgotten"]
-    elif bond > 70:
-        frames = PET_ART["happy"]
-    elif bond > 40:
-        frames = PET_ART["neutral"]
+def get_pet_art(pet, frame_index=0, action=None):
+    """
+    Get sprite based on pet state or current action.
+    action: If provided (e.g. "dance", "sit"), show that sprite
+    """
+    
+    # If performing an action, show action sprite
+    if action:
+        frames = PET_SPRITES.get(action, PET_SPRITES["normal"])
     else:
-        frames = PET_ART["sad"]
+        # Choose sprite based on pet's emotional state
+        bond = pet.pet_memory["bond_level"]
+        corruption = pet.player_memory["file_corruption"]
+        
+        if corruption > 80:
+            frames = PET_SPRITES["fear"]  # Glitchy/scared
+        elif corruption > 50:
+            frames = PET_SPRITES["sadness"]
+        elif bond > 70:
+            frames = PET_SPRITES["happy"]
+        elif bond > 40:
+            frames = PET_SPRITES["normal"]
+        else:
+            frames = PET_SPRITES["sadness"]
     
-    # Cycle frames
-    art = frames[frame_index % len(frames)]
+    # Get current frame (cycle through available frames)
+    frame = frames[frame_index % len(frames)]
     
-    # Apply corruption
-    if corruption > 30:
-        art = corrupt_text(art, corruption)
+    # Apply corruption visual effect (only if not doing action)
+    if not action and pet.player_memory["file_corruption"] > 30:
+        frame = corrupt_text(frame, pet.player_memory["file_corruption"])
     
-    return art
+    return frame
 
-def create_game_layout(pet, menu, current_message="", frame_index=0):
+
+def create_game_layout(pet, menu, current_message="", frame_index=0, current_action=None):
     """
     Creates the 'Lip Gloss' style interface
     """
@@ -137,7 +135,7 @@ def create_game_layout(pet, menu, current_message="", frame_index=0):
     )
 
     # 2. Get Art
-    art_str = get_pet_art(pet, frame_index)
+    art_str = get_pet_art(pet, frame_index, current_action)
     
     # 3. Combine Art and Stats into a Group
     # This renders them stacked vertically inside the panel
